@@ -1,0 +1,73 @@
+fs=1000;
+N_barrlet1=10;
+N_barrlet2=5;
+N_welch=9;
+step1=fs/N_barrlet1;
+step2=fs/N_barrlet2;
+step_w1=fs/(N_welch+1)*2;
+Amp1=1;
+Amp2=2;
+Amp3=3;
+phi1=2*pi*rand();
+phi2=2*pi*rand();
+phi3=2*pi*rand();
+n_point=0:1/fs:1;
+w1=200*pi;
+w2=300*pi;
+w3=400*pi;
+x1=Amp1*cos(w1*n_point+phi1);
+x2=Amp1*cos(w2*n_point+phi2);
+x3=Amp1*cos(w3*n_point+phi3);
+u=normrnd(0,1,1,length(n_point));
+x=x1+x2+x3+u;
+figure(1);
+plot(x);
+pxx1=1/length(n_point)*abs(fft(x)).*abs(fft(x));
+figure(2);
+%直接法
+plot(linspace(0,2,fs+1),log10(pxx1));
+x_corr=xcorr(x);
+pxx2=abs(fft(x_corr));
+figure(3);
+%间接法
+plot(linspace(0,2,length(pxx2)),log10(pxx2));
+%Barrlet法1
+figure(4);
+pxx3=zeros(1,fs/N_barrlet1);
+for vari=1:N_barrlet1
+    pxx3=pxx3+1/N_barrlet1*abs(fft(x((vari-1)*step1+1:vari*step1))).*abs(fft(x((vari-1)*step1+1:vari*step1)));
+end
+plot(linspace(0,2,length(pxx3)),log10(pxx3));
+%Barrlet法2
+figure(5);
+pxx4=zeros(1,fs/N_barrlet2);
+for vari=1:N_barrlet2
+    pxx4=pxx4+1/N_barrlet2*abs(fft(x((vari-1)*step2+1:vari*step2))).*abs(fft(x((vari-1)*step2+1:vari*step2)));
+end
+plot(linspace(0,2,length(pxx4)),log10(pxx4));
+%welch法1
+figure(6);
+pxx5=zeros(1,fs/(N_welch+1)*2);
+pxx5=pxx5+1/N_welch*abs(fft(x(1:step_w1))).*abs(fft(x(1:step_w1)));
+for vari=2:(N_welch+1)/2
+    pxx5=pxx5+1/N_welch*abs(fft(x((vari-1-0.5)*step_w1+1:(vari-0.5)*step_w1))).*abs(fft(x((vari-1-0.5)*step_w1+1:(vari-0.5)*step_w1)));
+    pxx5=pxx5+1/N_welch*abs(fft(x((vari-1)*step_w1+1:(vari)*step_w1))).*abs(fft(x((vari-1)*step_w1+1:(vari)*step_w1)));
+end
+plot(linspace(0,2,length(pxx5)),log10(pxx5));
+%welch法2
+figure(7);
+h=hamming(length(x));
+x_h=x.*transpose(h);
+pxx6=zeros(1,fs/(N_welch+1)*2);
+pxx6=pxx6+1/N_welch*abs(fft(x_h(1:step_w1))).*abs(fft(x_h(1:step_w1)));
+for vari=2:(N_welch+1)/2
+    pxx6=pxx6+1/N_welch*abs(fft(x_h((vari-1-0.5)*step_w1+1:(vari-0.5)*step_w1))).*abs(fft(x_h((vari-1-0.5)*step_w1+1:(vari-0.5)*step_w1)));
+    pxx6=pxx6+1/N_welch*abs(fft(x_h((vari-1)*step_w1+1:(vari)*step_w1))).*abs(fft(x_h((vari-1)*step_w1+1:(vari)*step_w1)));
+end
+plot(linspace(0,2,length(pxx6)),log10(pxx6));
+%ar
+figure(8);
+ar_order=50;
+N_psd=512;
+pxx7=pmcov(x,ar_order,N_psd,fs);
+plot(linspace(0,1,length(pxx7)),log10(pxx7));
